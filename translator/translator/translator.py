@@ -10,14 +10,7 @@ from pynecone.base import Base
 
 
 # openai.api_key = "<YOUR_OPENAI_API_KEY>"
-openai.api_key = "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"
-
-
-parallel_example = {
-    "한국어": ["오늘 날씨 어때", "딥러닝 기반의 AI기술이 인기를끌고 있다."],
-    "영어": ["How is the weather today", "Deep learning-based AI technology is gaining popularity."],
-    "일본어": ["今日の天気はどうですか", "ディープラーニングベースのAIテクノロジーが人気を集めています。"]
-}
+openai.api_key = ""
 
 
 def translate_text_using_text_davinci(text, src_lang, trg_lang) -> str:
@@ -31,28 +24,16 @@ def translate_text_using_text_davinci(text, src_lang, trg_lang) -> str:
     return translated_text
 
 
-def translate_text_using_chatgpt(text, src_lang, trg_lang) -> str:
-    # fewshot 예제를 만들고
-    def build_fewshot(src_lang, trg_lang):
-        src_examples = parallel_example[src_lang]
-        trg_examples = parallel_example[trg_lang]
-
-        fewshot_messages = []
-
-        for src_text, trg_text in zip(src_examples, trg_examples):
-            fewshot_messages.append({"role": "user", "content": src_text})
-            fewshot_messages.append({"role": "assistant", "content": trg_text})
-
-        return fewshot_messages
+def translate_text_using_chatgpt(text) -> str:
 
     # system instruction 만들고
-    system_instruction = f"assistant는 번역앱으로서 동작한다. {src_lang}를 {trg_lang}로 적절하게 번역하고 번역된 텍스트만 출력한다."
+    system_instruction = f"assistant는 도우미 입니다. 사용자의 질문에 대해 적절한 답변을 합니다."
 
     # messages를만들고
-    fewshot_messages = build_fewshot(src_lang=src_lang, trg_lang=trg_lang)
+    # fewshot_messages = build_fewshot(src_lang=src_lang, trg_lang=trg_lang)
 
     messages = [{"role": "system", "content": system_instruction},
-                *fewshot_messages,
+                # *fewshot_messages,
                 {"role": "user", "content": text}
                 ]
 
@@ -82,9 +63,8 @@ class State(pc.State):
     @pc.var
     def output(self) -> str:
         if not self.text.strip():
-            return "Translations will appear here."
-        translated = translate_text_using_chatgpt(
-            self.text, src_lang=self.src_lang, trg_lang=self.trg_lang)
+            return "답변이 여기 표시됩니다!"
+        translated = translate_text_using_chatgpt(self.text)
         return translated
 
     def post(self):
@@ -104,9 +84,9 @@ class State(pc.State):
 def header():
     """Basic instructions to get started."""
     return pc.box(
-        pc.text("Translator 🗺", font_size="2rem"),
+        pc.text("Chat-Bot 🗺", font_size="2rem"),
         pc.text(
-            "Translate things and post them as messages!",
+            "안녕하세요",
             margin_top="0.5rem",
             color="#666",
         ),
@@ -195,20 +175,6 @@ def index():
             on_blur=State.set_text,
             margin_top="1rem",
             border_color="#eaeaef"
-        ),
-        pc.select(
-            list(parallel_example.keys()),
-            value=State.src_lang,
-            placeholder="Select a language",
-            on_change=State.set_src_lang,
-            margin_top="1rem",
-        ),
-        pc.select(
-            list(parallel_example.keys()),
-            value=State.trg_lang,
-            placeholder="Select a language",
-            on_change=State.set_trg_lang,
-            margin_top="1rem",
         ),
         output(),
         pc.button("Post", on_click=State.post, margin_top="1rem"),
