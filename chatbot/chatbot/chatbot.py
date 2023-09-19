@@ -2,47 +2,15 @@
 
 # Import pynecone.
 import openai
-import os
 from datetime import datetime
 
 import pynecone as pc
 from pynecone.base import Base
 
+from .chatbot_service import ChatBotService
 
 # openai.api_key = "<YOUR_OPENAI_API_KEY>"
-openai.api_key = ""
-
-
-def translate_text_using_text_davinci(text, src_lang, trg_lang) -> str:
-    response = openai.Completion.create(engine="text-davinci-003",
-                                        prompt=f"Translate the following {src_lang} text to {trg_lang}: {text}",
-                                        max_tokens=200,
-                                        n=1,
-                                        temperature=1
-                                        )
-    translated_text = response.choices[0].text.strip()
-    return translated_text
-
-
-def translate_text_using_chatgpt(text) -> str:
-
-    # system instruction 만들고
-    system_instruction = f"assistant는 도우미 입니다. 사용자의 질문에 대해 적절한 답변을 합니다."
-
-    # messages를만들고
-    # fewshot_messages = build_fewshot(src_lang=src_lang, trg_lang=trg_lang)
-
-    messages = [{"role": "system", "content": system_instruction},
-                # *fewshot_messages,
-                {"role": "user", "content": text}
-                ]
-
-    # API 호출
-    response = openai.ChatCompletion.create(model="gpt-3.5-turbo",
-                                            messages=messages)
-    translated_text = response['choices'][0]['message']['content']
-    # Return
-    return translated_text
+api_key = ""
 
 
 class Message(Base):
@@ -63,9 +31,9 @@ class State(pc.State):
     @pc.var
     def output(self) -> str:
         if not self.text.strip():
-            return "답변이 여기 표시됩니다!"
-        translated = translate_text_using_chatgpt(self.text)
-        return translated
+            return ""
+        chatbot_service = ChatBotService(api_key)
+        return chatbot_service.generate_output(self.text)
 
     def post(self):
         self.messages = [
