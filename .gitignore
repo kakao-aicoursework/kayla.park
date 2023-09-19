@@ -1,0 +1,11 @@
+
+chatbot/pynecone.db
+
+__pycache__/
+
+*.py[cod]
+
+.web
+
+
+
