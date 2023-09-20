@@ -39,16 +39,9 @@ class ChatBotService:
         chain_5 = self.create_chain(writer_llm, "prompt5", "output")
 
         preprocess_chain = SequentialChain(
-            chains=[
-                chain_1,
-                chain_2,
-                chain_3,
-                chain_4,
-                chain_5,
-            ],
+            chains=[chain_1, chain_2, chain_3, chain_4, chain_5],
             input_variables=["docs", "text"],
             output_variables=["function", "login_example", "deployment", "settings", "output"],
-            # output_variables=["extracted", "answer", "output"],
             verbose=True,
         )
 
@@ -58,5 +51,4 @@ class ChatBotService:
         )
         context = preprocess_chain(context)
         output = context["output"]
-        print(output)
         return output
