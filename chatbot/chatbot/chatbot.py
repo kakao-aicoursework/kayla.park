@@ -1,8 +1,6 @@
 """Welcome to Pynecone! This file outlines the steps to create a basic app."""
 
 # Import pynecone.
-import openai
-from datetime import datetime
 
 import pynecone as pc
 from pynecone.base import Base
@@ -14,10 +12,8 @@ api_key = ""
 
 
 class Message(Base):
-    original_text: str
     text: str
-    created_at: str
-    to_lang: str
+    role: str
 
 
 class State(pc.State):
@@ -25,25 +21,11 @@ class State(pc.State):
 
     text: str = ""
     messages: list[Message] = []
-    src_lang: str = "한국어"
-    trg_lang: str = "영어"
 
-    @pc.var
-    def output(self) -> str:
-        if not self.text.strip():
-            return ""
-        chatbot_service = ChatBotService(api_key)
-        return chatbot_service.generate_output(self.text)
-
-    def post(self):
-        self.messages = [
-            Message(
-                original_text=self.text,
-                text=self.output,
-                created_at=datetime.now().strftime("%B %d, %Y %I:%M %p"),
-                to_lang=self.trg_lang,
-            )
-        ] + self.messages
+    def send(self):
+        self.messages.append(Message(text=self.text, role="user"))
+        self.messages.append(Message(text=ChatBotService(api_key).generate_output(self.text), role="assistant"))
+        State.set_text("")
 
 
 # Define views.
@@ -52,85 +34,24 @@ class State(pc.State):
 def header():
     """Basic instructions to get started."""
     return pc.box(
-        pc.text("Chat-Bot 🗺", font_size="2rem"),
-        pc.text(
-            "안녕하세요",
-            margin_top="0.5rem",
-            color="#666",
-        ),
+        pc.text("Chat-Bot 🗺", font_size="2rem")
     )
 
 
-def down_arrow():
-    return pc.vstack(
-        pc.icon(
-            tag="arrow_down",
-            color="#666",
-        )
-    )
-
-
-def text_box(text):
+def text_box(text, color):
     return pc.text(
         text,
-        background_color="#fff",
+        background_color=color,
         padding="1rem",
         border_radius="8px",
     )
 
 
-def message(message):
+def message(msg):
     return pc.box(
-        pc.vstack(
-            text_box(message.original_text),
-            down_arrow(),
-            text_box(message.text),
-            pc.box(
-                pc.text(message.to_lang),
-                pc.text(" · ", margin_x="0.3rem"),
-                pc.text(message.created_at),
-                display="flex",
-                font_size="0.8rem",
-                color="#666",
-            ),
-            spacing="0.3rem",
-            align_items="left",
-        ),
-        background_color="#f5f5f5",
-        padding="1rem",
-        border_radius="8px",
-    )
-
-
-def smallcaps(text, **kwargs):
-    return pc.text(
-        text,
-        font_size="0.7rem",
-        font_weight="bold",
-        text_transform="uppercase",
-        letter_spacing="0.05rem",
-        **kwargs,
-    )
-
-
-def output():
-    return pc.box(
-        pc.box(
-            smallcaps(
-                "Output",
-                color="#aeaeaf",
-                background_color="white",
-                padding_x="0.1rem",
-            ),
-            position="absolute",
-            top="-0.5rem",
-        ),
-        pc.text(State.output),
-        padding="1rem",
-        border="1px solid #eaeaef",
-        margin_top="1rem",
-        border_radius="8px",
-        position="relative",
+        text_box(msg.role + ":\n" + msg.text, "#7ab0ff"),
+        spacing="0.3rem",
+        align_items="left",
     )
 
 
@@ -138,26 +59,27 @@ def index():
     """The main view."""
     return pc.container(
         header(),
-        pc.input(
-            placeholder="Text to translate",
-            on_blur=State.set_text,
-            margin_top="1rem",
-            border_color="#eaeaef"
-        ),
-        output(),
-        pc.button("Post", on_click=State.post, margin_top="1rem"),
         pc.vstack(
             pc.foreach(State.messages, message),
             margin_top="2rem",
             spacing="1rem",
             align_items="left"
         ),
-        padding="2rem",
-        max_width="600px"
+        pc.hstack(
+            pc.input(
+                placeholder="Ask any question...",
+                on_blur=State.set_text,
+                border_color="#eaeaef"
+            ),
+            pc.button("Send", on_click=State.send, margin_top="1rem"),
+            padding="2rem",
+            max_width="600px"
+        )
     )
 
 
 # Add state and page to the app.
 app = pc.App(state=State)
-app.add_page(index, title="Translator")
+app.add_page(index, title="ChatBot")
 app.compile()
+
