@@ -3,19 +3,22 @@ import os
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts.chat import ChatPromptTemplate
 from langchain.chains import LLMChain
-from langchain.chains import SequentialChain
 
-os.environ["OPENAI_API_KEY"] = "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"
+from .vector_db.vector_db import VectorDB
+
+os.environ["OPENAI_API_KEY"] = ""
 
 
 class ChatBotService:
     PROJECT_PROMPT_PATH = os.path.join(os.path.dirname(__file__), "../datas/prompt")
 
     def __init__(self):
-        self.prompt_path = os.path.join(os.path.dirname(__file__), "../datas/")
+        self.llm = ChatOpenAI(temperature=0, max_tokens=1024, model="gpt-3.5-turbo-16k")
+        self.vectorDB = VectorDB()
+        self.api_name = ""
 
     def read_prompt_template(self, template: str) -> str:
-        file_path = self.prompt_path + template + ".txt"
+        file_path = os.path.join(self.PROJECT_PROMPT_PATH, template + ".txt")
         with open(file_path, "r") as f:
             prompt_template = f.read()
 
@@ -31,27 +34,22 @@ class ChatBotService:
             verbose=True,
         )
 
+    def separate_intent(self, text):
+        self.api_name = self.create_chain(self.llm, "parse_intent", "intent").run(
+            dict(text=text, intent_list=self.read_prompt_template("intent_list")))
+
     def generate_output(self, text):
-        docs = self.read_prompt_template("project_data_카카오싱크")
-        writer_llm = ChatOpenAI(temperature=0.1, max_tokens=2048, model="gpt-3.5-turbo-16k")
+        self.separate_intent(text)
+        if self.vectorDB.CHROMA_COLLECTION_NAME.get(self.api_name) is None:
+            return self.create_chain(self.llm, "prompt_say_sorry", "output").run(dict())
 
-        chain_1 = self.create_chain(writer_llm, "prompt1", "function")
-        chain_2 = self.create_chain(writer_llm, "prompt2", "login_example")
-        chain_3 = self.create_chain(writer_llm, "prompt3", "deployment")
-        chain_4 = self.create_chain(writer_llm, "prompt4", "settings")
-        chain_5 = self.create_chain(writer_llm, "prompt5", "output")
+        docs = self.vectorDB.query_db(text, self.api_name)
+        return self.create_chain(self.llm, "prompt", "output").run(dict(docs=docs, text=text))
 
-        preprocess_chain = SequentialChain(
-            chains=[chain_1, chain_2, chain_3, chain_4, chain_5],
-            input_variables=["docs", "text"],
-            output_variables=["function", "login_example", "deployment", "settings", "output"],
-            verbose=True,
-        )
 
-        context = dict(
-            docs=docs,
-            text=text
-        )
-        context = preprocess_chain(context)
-        output = context["output"]
-        return output
+if __name__ == "__main__":
+    c = ChatBotService()
+    d1 = c.generate_output("카카오 싱크에 어떤 기능 목록이 있나요?")
+    d2 = c.generate_output("오늘 날씨 어때?")
+    print(d1)
+    print(d2)

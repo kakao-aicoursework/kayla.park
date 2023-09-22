@@ -5,7 +5,7 @@ from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores import Chroma
 
-os.environ["OPENAI_API_KEY"] = "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"
+os.environ["OPENAI_API_KEY"] = ""
 
 
 class VectorDB:
