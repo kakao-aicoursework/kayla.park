@@ -5,10 +5,13 @@ from langchain.prompts.chat import ChatPromptTemplate
 from langchain.chains import LLMChain
 from langchain.chains import SequentialChain
 
+os.environ["OPENAI_API_KEY"] = "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"
+
 
 class ChatBotService:
-    def __init__(self, api_key: str):
-        os.environ["OPENAI_API_KEY"] = api_key
+    PROJECT_PROMPT_PATH = os.path.join(os.path.dirname(__file__), "../datas/prompt")
+
+    def __init__(self):
         self.prompt_path = os.path.join(os.path.dirname(__file__), "../datas/")
 
     def read_prompt_template(self, template: str) -> str:
