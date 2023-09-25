@@ -1,54 +1,25 @@
-import os
+import random
 
-from langchain.chat_models import ChatOpenAI
-from langchain.prompts.chat import ChatPromptTemplate
-from langchain.chains import LLMChain
-from langchain.chains import SequentialChain
+from .chatbot_langchain import ChatBotLangChain
+from .chatbot_history import ChatBotHistory
 
 
 class ChatBotService:
-    def __init__(self, api_key: str):
-        os.environ["OPENAI_API_KEY"] = api_key
-        self.prompt_path = os.path.join(os.path.dirname(__file__), "../datas/")
-
-    def read_prompt_template(self, template: str) -> str:
-        file_path = self.prompt_path + template + ".txt"
-        with open(file_path, "r") as f:
-            prompt_template = f.read()
-
-        return prompt_template
-
-    def create_chain(self, llm, template, output_key):
-        return LLMChain(
-            llm=llm,
-            prompt=ChatPromptTemplate.from_template(
-                template=self.read_prompt_template(template),
-            ),
-            output_key=output_key,
-            verbose=True,
-        )
+    def __init__(self):
+        self.langChain = ChatBotLangChain()
+        self.history = ChatBotHistory()
+        self.conversation_id = random.randbytes(3).hex()
 
     def generate_output(self, text):
-        docs = self.read_prompt_template("project_data_카카오싱크")
-        writer_llm = ChatOpenAI(temperature=0.1, max_tokens=2048, model="gpt-3.5-turbo-16k")
+        history_file = self.history.load_conversation_history(self.conversation_id)
+        context = dict(chat_history=self.history.get_chat_history(self.conversation_id), text=text)
+        context = self.langChain.generate_output(text, context)
+        self.history.log_all(history_file, context)
+        return context["output"]
 
-        chain_1 = self.create_chain(writer_llm, "prompt1", "function")
-        chain_2 = self.create_chain(writer_llm, "prompt2", "login_example")
-        chain_3 = self.create_chain(writer_llm, "prompt3", "deployment")
-        chain_4 = self.create_chain(writer_llm, "prompt4", "settings")
-        chain_5 = self.create_chain(writer_llm, "prompt5", "output")
-
-        preprocess_chain = SequentialChain(
-            chains=[chain_1, chain_2, chain_3, chain_4, chain_5],
-            input_variables=["docs", "text"],
-            output_variables=["function", "login_example", "deployment", "settings", "output"],
-            verbose=True,
-        )
-
-        context = dict(
-            docs=docs,
-            text=text
-        )
-        context = preprocess_chain(context)
-        output = context["output"]
-        return output
+# if __name__ == "__main__":
+#     c = ChatBotService()
+#     d1 = c.generate_output("카카오 싱크에 어떤 기능 목록이 있나요?")
+#     d2 = c.generate_output("오늘 날씨 어때?")
+#     print(d1)
+#     print(d2)

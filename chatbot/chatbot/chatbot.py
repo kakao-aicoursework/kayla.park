@@ -1,4 +1,5 @@
 """Welcome to Pynecone! This file outlines the steps to create a basic app."""
+import os
 
 # Import pynecone.
 
@@ -7,8 +8,8 @@ from pynecone.base import Base
 
 from .chatbot_service import ChatBotService
 
-# openai.api_key = "<YOUR_OPENAI_API_KEY>"
-api_key = ""
+os.environ["OPENAI_API_KEY"] = ""
+chatbot_service = ChatBotService()
 
 
 class Message(Base):
@@ -24,7 +25,7 @@ class State(pc.State):
 
     def send(self):
         self.messages.append(Message(text=self.text, role="user"))
-        self.messages.append(Message(text=ChatBotService(api_key).generate_output(self.text), role="assistant"))
+        self.messages.append(Message(text=chatbot_service.generate_output(self.text), role="assistant"))
         State.set_text("")
 
 
@@ -49,7 +50,7 @@ def text_box(text, color):
 
 def message(msg):
     return pc.box(
-        text_box(msg.role + ":\n" + msg.text, "#7ab0ff"),
+        text_box(msg.role + ":\n" + msg.text, "#7ab0ff" if msg.role == "user" else "ffffff"),
         spacing="0.3rem",
         align_items="left",
     )
@@ -83,3 +84,5 @@ app = pc.App(state=State)
 app.add_page(index, title="ChatBot")
 app.compile()
 
+if __name__ == "__main__":
+    index()
