@@ -5,8 +5,6 @@ from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores import Chroma
 
-os.environ["OPENAI_API_KEY"] = ""
-
 
 class VectorDB:
     PROJECT_DATA_PATH = os.path.join(os.path.dirname(__file__), "../../datas/project_data")
